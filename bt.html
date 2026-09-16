@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Tamu - Muh. Faiq Dzakwan</title>
+    <!-- Menghubungkan ke file CSS external -->
+    <link rel="stylesheet" href="bt.css">
+    <!-- Font Awesome untuk Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="card">
+        <h2><i class="fas fa-book-open"></i> Buku Tamu</h2>
+        <p class="bio">Tinggalkan pesan atau kesan Anda di bawah ini!</p>
+        
+        <!-- Form Buku Tamu -->
+        <form id="guestbookForm" class="guestbook-form">
+            <input type="text" id="nama" placeholder="Nama Anda" required>
+            <input type="email" id="email" placeholder="Email Anda" required>
+            <textarea id="pesan" rows="4" placeholder="Tulis pesan Anda..." required></textarea>
+            <button type="submit" id="btnSubmit"><i class="fas fa-paper-plane"></i> Kirim Pesan</button>
+        </form>
+
+        <hr class="divider">
+
+        <!-- List Pesan (Auto Load) -->
+        <div class="section">
+            <h3 class="section-title"><i class="fas fa-comments"></i> Pesan Terkini</h3>
+            <div id="messagesContainer" class="messages-list">
+                <p class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat pesan...</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <a href="index.html" class="btn btn-dark"><i class="fas fa-arrow-left"></i> Kembali ke Profil</a>
+        </div>
+    </div>
+
+    <script>
+        // Ganti dengan URL Web App dari Google Apps Script Anda
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEGCpTiX0nEz83ACQTGMQeIsk9Fs2b_YNpZvI500wrCTX-M0ktqleVrzmc6Viim6Q/exec";
+
+        // 1. Fungsi Auto Load Pesan dari Google Sheets
+        async function loadMessages() {
+            const container = document.getElementById("messagesContainer");
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = "<p class='loading'>Belum ada pesan.</p>";
+                    return;
+                }
+
+                container.innerHTML = "";
+                data.forEach(item => {
+                    const card = document.createElement("div");
+                    card.className = "msg-card";
+                    card.innerHTML = `
+                        <div class="msg-header">
+                            <span class="msg-author"><i class="fas fa-user-circle"></i> ${escapeHtml(item.nama)}</span>
+                            <span>${item.waktu}</span>
+                        </div>
+                        <div class="msg-body">${escapeHtml(item.pesan)}</div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                container.innerHTML = "<p class='loading' style='color:#f87171;'>Gagal memuat pesan.</p>";
+                console.error("Error loading messages:", err);
+            }
+        }
+
+        // 2. Fungsi Kirim Pesan ke Apps Script
+        document.getElementById("guestbookForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById("btnSubmit");
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Mengirim...";
+
+            const payload = {
+                nama: document.getElementById("nama").value,
+                email: document.getElementById("email").value,
+                pesan: document.getElementById("pesan").value
+            };
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                alert("Pesan berhasil dikirim!");
+                document.getElementById("guestbookForm").reset();
+                
+                // Refresh daftar pesan secara otomatis setelah 1.5 detik
+                setTimeout(loadMessages, 1500);
+            } catch (err) {
+                alert("Gagal mengirim pesan.");
+                console.error("Error sending message:", err);
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = "<i class='fas fa-paper-plane'></i> Kirim Pesan";
+            }
+        });
+
+        // Anti XSS
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Auto load saat pertama dibuka
+        window.addEventListener("DOMContentLoaded", loadMessages);
+    </script>
+</body>
+</html>
