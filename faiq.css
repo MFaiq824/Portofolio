@@ -212,3 +212,12 @@ h1 {
     color: #666;
     line-height: 1.4;
 }
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
